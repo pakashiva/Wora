@@ -1,0 +1,21 @@
+{% extends 'base.html' %}
+
+{% block title %}Register{% endblock %}
+
+{% block content %}
+
+<div class="form-box">
+    <h3>Create Account</h3>
+
+    <form method="POST" action="/register" enctype="multipart/form-data">
+        <input type="text" name="username" placeholder="Username" required>
+        <input type="password" name="password" placeholder="Password" required>
+        <h2>Upload Image</h2>
+        <input type="file" name="photo" accept="image/*" required>
+        <button type="submit" class="btn">Register</button>
+
+    </form>
+
+</div>
+
+{% endblock %}  

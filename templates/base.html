@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>{% block title %}Quora Clone{% endblock %}</title>
+
+    <style>
+        body {
+            margin: 0;
+            font-family: 'Segoe UI', Arial, sans-serif;
+            background-color: #f1f2f2;
+        }
+
+        /* 🔴 Navbar */
+        .navbar {
+            background-color: #b92b27;
+            color: white;
+            padding: 12px 30px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+        }
+
+        .navbar h2 {
+            margin: 0;
+            letter-spacing: 0.5px;
+        }
+
+        /* ✨ Nav Links Upgrade */
+        .nav-links a {
+            position: relative;
+            color: white;
+            text-decoration: none;
+            margin-left: 20px;
+            font-weight: 500;
+            padding: 5px 0;
+            transition: color 0.3s ease;
+        }
+
+        /* underline animation */
+        .nav-links a::after {
+            content: "";
+            position: absolute;
+            width: 0%;
+            height: 2px;
+            left: 0;
+            bottom: -2px;
+            background-color: white;
+            transition: width 0.3s ease;
+        }
+
+        .nav-links a:hover {
+            color: #ffeaea;
+        }
+
+        .nav-links a:hover::after {
+            width: 100%;
+        }
+
+        /* Layout */
+        .container {
+            width: 60%;
+            margin: 25px auto;
+        }
+
+        /* 📦 Card */
+        .card {
+            background: white;
+            padding: 18px;
+            margin-bottom: 18px;
+            border-radius: 10px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+
+        .card:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 6px 18px rgba(0,0,0,0.12);
+        }
+
+        .username {
+            font-weight: bold;
+            margin-bottom: 8px;
+            color: #333;
+        }
+
+        .content {
+            margin-bottom: 12px;
+            line-height: 1.5;
+        }
+
+        /* 🔗 Links inside content */
+        .content a {
+            color: #b92b27;
+            text-decoration: none;
+            font-weight: 500;
+            border-bottom: 1px solid transparent;
+            transition: all 0.2s ease;
+        }
+
+        .content a:hover {
+            border-bottom: 1px solid #b92b27;
+        }
+
+        /* Buttons */
+        .btn {
+            padding: 8px 14px;
+            border: none;
+            background-color: #b92b27;
+            color: white;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 500;
+            transition: all 0.2s ease;
+        }
+
+        .btn:hover {
+            background-color: #a02622;
+            transform: scale(1.03);
+        }
+
+        /* Form */
+        .form-box {
+            background: white;
+            padding: 18px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            box-shadow: 0 3px 10px rgba(0,0,0,0.08);
+        }
+
+        input, textarea {
+            width: 100%;
+            padding: 10px;
+            margin-top: 8px;
+            margin-bottom: 12px;
+            border-radius: 6px;
+            border: 1px solid #ccc;
+            font-size: 14px;
+            transition: border 0.2s ease, box-shadow 0.2s ease;
+        }
+
+        input:focus, textarea:focus {
+            border-color: #b92b27;
+            outline: none;
+            box-shadow: 0 0 5px rgba(185, 43, 39, 0.3);
+        }
+
+    </style>
+</head>
+
+<body>
+
+    <!-- 🔴 Navbar -->
+    <div class="navbar">
+        <h2>QuoraLite</h2>
+        <div class="nav-links">
+            <a href="/">Home</a>
+            <a href="/ask">Ask Question</a>
+
+            {% if current_user %}
+                <span>Hi, {{ current_user.username }}</span>
+               <img src="{{ url_for('static', filename='uploads/' + current_user.profile) }}" 
+                style="width:35px; height:35px; border-radius:50%; margin-left:10px; object-fit:cover;">
+
+                <a href="{{ url_for('logout') }}">Logout</a>
+            {% else %}
+                <a href="{{ url_for('login') }}">Login</a>
+                <a href="{{ url_for('register')}}">Register</a>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- 📦 Main Content -->
+    <div class="container">
+        {% block content %}
+        {% endblock %}
+    </div>
+
+</body>
+</html>

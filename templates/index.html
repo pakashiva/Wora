@@ -1,0 +1,48 @@
+{% extends 'base.html' %}
+
+{% block title %} Home {% endblock %}
+
+{% block content %}
+
+
+
+
+{% if 'user_id' in session %}
+<div class="form-box">
+    <form action="/add" method="POST">
+        <input type="text" placeholder="Your name" name="username" required>
+        <textarea placeholder="What's on your mind" name="content" required></textarea>
+        <button type="submit" class="btn">Submit thoughts</button>
+    </form>
+</div>
+{% endif %}
+
+
+
+<!-- 🧠 Posts -->
+{% for post in db %}
+<div class="card">
+
+    <!-- 👤 Username -->
+    <div class="username">
+        {{ post.username }}
+    </div>
+
+    <!-- 💬 Content -->
+    <div class="content">
+        {{ post.content }}
+    </div>
+
+    <!-- 🔧 Actions -->
+    <div style="display: flex; gap: 10px;">
+        {% if session['user_id'] == post['user_id'] %}
+            <a href="/delete/{{ loop.index0 }}" class="btn">Delete</a>
+            <a href="{{ url_for('update_content', idx=loop.index0) }}" class="btn">Update</a>
+        {% endif %}
+    </div>
+
+</div>
+
+{% endfor %}
+
+{% endblock %}

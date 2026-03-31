@@ -1,0 +1,36 @@
+{% extends 'base.html' %}
+
+{% block title %}Update{% endblock %}
+
+{% block content %}
+
+<!-- 📦 Card -->
+<div class="card">
+
+    <!-- 👤 Username -->
+    <div class="username">
+        {{ username }}
+    </div>
+
+    <!-- 💬 Old Content -->
+    <div class="content">
+        {{ content }}
+    </div>
+
+</div>
+
+<!-- ✏️ Update Form -->
+<div class="form-box">
+    <form action="{{ url_for('update_content', idx=idx) }}" method="POST">
+        
+        <label>Update your content</label>
+        <textarea 
+            name="updated_content" 
+            placeholder="Edit your post..."
+            required>{{ content }}</textarea>
+
+        <button type="submit" class="btn">Update Now</button>
+    </form>
+</div>  
+
+{% endblock %}
