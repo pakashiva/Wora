@@ -3,47 +3,37 @@ from werkzeug.security import generate_password_hash, check_password_hash
 from werkzeug.utils import secure_filename
 from functools import wraps
 import os
-import random
+from flask_sqlalchemy import SQLAlchemy
 
 app = Flask(__name__)
+
+#setting-up database
+app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///app.db'
+app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+
+db_sql = SQLAlchemy(app)
+
+# define models
+
+class User(db_sql.Model):
+    id = db_sql.Column(db_sql.Integer , primary_key = True)
+    username = db_sql.Column(db_sql.String(100) , unique = True , nullable = False)
+    password = db_sql.Column(db_sql.String(200) , nullable = False)
+    profile = db_sql.Column(db_sql.String(200))
+
+class Post(db_sql.Model):
+    id = db_sql.Column(db_sql.Integer, primary_key = True)
+    content = db_sql.Column(db_sql.Text ,nullable = False)
+    user_id = db_sql.Column(db_sql.Integer , db_sql.ForeignKey('user.id') , nullable =  False)
+
+    user = db_sql.relationship('User' , backref = 'posts')
 
 
 #image upload requirements
 app.config['UPLOAD_FOLDER'] =  os.path.join(app.root_path, 'static', 'uploads')
 os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
 
-# Temproary database
-db = []
-users = []
 
-sample_usernames = ["alice", "bob", "charlie", "david", "eve"]
-sample_passwords = ["pass123", "qwerty", "abc123", "secret", "letmein"]
-sample_posts = [
-    "Hello world!",
-    "Testing my first post",
-    "Flask is fun",
-    "Random thoughts...",
-    "Another day, another post"
-]
-
-# Create users
-for i in range(len(sample_usernames)):
-    temp = {
-        'user_id': i + 1,
-        'username': sample_usernames[i],
-        'password': sample_passwords[i]
-    }
-    users.append(temp)
-
-# Create posts linked to users
-for i in range(10):  # 10 random posts
-    user = random.choice(users)
-    temp_dict = {
-        'username': user['username'],
-        'content': random.choice(sample_posts),
-        'user_id': user['user_id']
-    }
-    db.append(temp_dict)
 
 #session key
 app.secret_key = 'ganiag'
@@ -60,10 +50,12 @@ def login_required(f):
     return wrapper
 
 
+#home route
 
 @app.route('/')
 def home():
-    return render_template('index.html' , db = db, users = users)
+    posts = Post.query.all()
+    return render_template('index.html' , posts=posts)
     
 
 
@@ -73,65 +65,61 @@ def home():
 def add_msg():
     content = request.form.get('content')
 
-    # 🔒 Always take user from session, not form
-    user = next((u for u in users if u['user_id'] == session['user_id']), None)
+    user = User.query.get(session['user_id'])
+
 
     if user and content:
-        temp_dict = {
-            'username': user['username'],
-            'content': content,
-            'user_id': user['user_id']
-        }
-        db.append(temp_dict)
+        newpost = Post(content=content , user_id = user.id)
+        db_sql.session.add(newpost)
+        db_sql.session.commit()
+
     return redirect(url_for('home'))
     
 # Delete post
 @app.route('/delete/<int:idx>')
 @login_required
 def del_post(idx):
-    if 0 <= idx < len(db):
-        if session['user_id'] == db[idx]['user_id']:
-            db.pop(idx)
-        else:
-            return 'Unauthorised Access' , 403    
+
+    post = Post.query.get(idx)
+
+    if post and post.user_id == session['user_id']:
+        db_sql.session.delete(post)
+        db_sql.session.commit()
+          
     return redirect(url_for('home'))
     
 # update post
 @app.route('/update/<int:idx>' , methods = ['GET' , 'POST'])
 @login_required
 def update_content(idx):
-    if 0 <= idx < len(db):
-        post = db[idx]
+    
+    if request.method == 'POST':
+        new_content = request.form.get('updated_content')
 
-        if session['user_id'] != db[idx]['user_id']:
-            return 'Unauthorised Access' , 403
-            
-        if request.method == 'POST':
-            new_content = request.form.get('updated_content')
+        post = Post.query.get(idx)
 
-            if new_content:
-                db[idx]['content'] = new_content
-                return redirect(url_for('home'))
+        if post and post.user_id == session['user_id']:
+            post.content = new_content
+            db_sql.session.commit()
 
             
         return render_template(
-                    'update.html', 
-                    username = post['username'] , 
-                    content = post['content'] , 
-                    idx = idx)
+            'update.html',
+            username=post.user.username,
+            content=post.content,
+            idx=idx
+        )
 
     return 'Post not found' , 404    
 
     
-
-   
 
 # registration
 @app.route('/register' , methods = ['GET','POST'])
 def register():
     if request.method == 'POST':
         username = request.form.get('username')
-        password = generate_password_hash(request.form.get('password'))
+        hashed_password = generate_password_hash(request.form.get('password'))
 
         # File handling
 
@@ -143,20 +131,16 @@ def register():
             filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
             file.save(filepath)
 
-        if username and password:
-            temp = {
-                'user_id': len(users) + 1,
-                'username': username,
-                'password': password,
-                'profile': filename  
-            }
-            users.append(temp)
+        if username and hashed_password:
+            new_user = User(username=username, password=hashed_password, profile=filename)
+            db_sql.session.add(new_user)
+            db_sql.session.commit()
             
             return redirect(url_for('login'))
     
     return render_template('register.html')
 
-# Authentication
+# Login
 
 @app.route('/login' , methods = ['GET' , 'POST'])
 def login():
@@ -164,11 +148,12 @@ def login():
         username = request.form.get('username')
         password = request.form.get('password')
 
-        for user in users:
-            if user['username'] == username and check_password_hash(user['password'] , password):
-                session['user_id'] = user["user_id"]
-                return redirect(url_for('home'))
-            
+        user = User.query.filter(username=username).first()
+
+        if user and check_password_hash(user.password , password):
+            session['user_id'] = user.id
+            return redirect(url_for('home'))
+
         return 'Invalid Credentials'
     
     return render_template('login.html')
@@ -185,15 +170,11 @@ def logout():
 # context processor
 @app.context_processor
 def inject_user():
-    
     current_user = None
-
     if 'user_id' in session:
-        for user in users:
-            if user['user_id'] == session['user_id']:
-                current_user = user
-                break
-    return dict(current_user = current_user)    
+        user = User.query.get(session['user_id'])
+        return dict(current_user = user)
+    return dict(current_user = None)    
    
 
 
