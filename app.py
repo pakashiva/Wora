@@ -38,13 +38,13 @@ os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
 #session key
 app.secret_key = 'ganiag'
 
-# check-logge-in
+
+# check-logged-in
 
 def login_required(f):
     @wraps(f)
     def wrapper(*args , **kwargs):
         if "user_id" not in session:
-            print("NOT LOGGED IN")
             return redirect(url_for('login'))
         return f(*args , **kwargs)
     return wrapper
@@ -92,27 +92,30 @@ def del_post(idx):
 @app.route('/update/<int:idx>' , methods = ['GET' , 'POST'])
 @login_required
 def update_content(idx):
-    
-    if request.method == 'POST':
-        new_content = request.form.get('updated_content')
 
-        post = Post.query.get(idx)
+    post = Post.query.get(idx)
+
+    if not post:
+        return "Post Not found", 404
+    
+    if post.user_id != session['user_id']:
+        return "Unauthorised access" , 403  
+
+    if post and request.method == 'POST':
+        new_content = request.form.get('updated_content')
 
         if post and post.user_id == session['user_id']:
             post.content = new_content
             db_sql.session.commit()
+            return redirect(url_for('home'))
 
-            
-        return render_template(
+
+    return render_template(
             'update.html',
             username=post.user.username,
             content=post.content,
             idx=idx
         )
-
-    return 'Post not found' , 404    
-
-    
 
 # registration
 @app.route('/register' , methods = ['GET','POST'])
@@ -148,7 +151,8 @@ def login():
         username = request.form.get('username')
         password = request.form.get('password')
 
-        user = User.query.filter(username=username).first()
+
+        user = User.query.filter(User.username == username).first()
 
         if user and check_password_hash(user.password , password):
             session['user_id'] = user.id
@@ -170,7 +174,6 @@ def logout():
 # context processor
 @app.context_processor
 def inject_user():
-    current_user = None
     if 'user_id' in session:
         user = User.query.get(session['user_id'])
         return dict(current_user = user)

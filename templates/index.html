@@ -10,7 +10,6 @@
 {% if 'user_id' in session %}
 <div class="form-box">
     <form action="/add" method="POST">
-        <input type="text" placeholder="Your name" name="username" required>
         <textarea placeholder="What's on your mind" name="content" required></textarea>
         <button type="submit" class="btn">Submit thoughts</button>
     </form>
@@ -20,12 +19,12 @@
 
 
 <!-- 🧠 Posts -->
-{% for post in db %}
+{% for post in posts %}
 <div class="card">
 
     <!-- 👤 Username -->
     <div class="username">
-        {{ post.username }}
+        {{ post.user.username }}
     </div>
 
     <!-- 💬 Content -->
@@ -35,9 +34,9 @@
 
     <!-- 🔧 Actions -->
     <div style="display: flex; gap: 10px;">
-        {% if session['user_id'] == post['user_id'] %}
-            <a href="/delete/{{ loop.index0 }}" class="btn">Delete</a>
-            <a href="{{ url_for('update_content', idx=loop.index0) }}" class="btn">Update</a>
+        {% if session['user_id'] == post.user_id %}
+            <a href="/delete/{{ post.id }}" class="btn">Delete</a>
+            <a href="{{ url_for('update_content', idx = post.id) }}" class="btn">Update</a>
         {% endif %}
     </div>
 
