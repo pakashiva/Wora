@@ -1,15 +1,20 @@
 from flask import Flask, render_template , redirect , url_for ,request, session , flash
 from werkzeug.security import generate_password_hash, check_password_hash
 from werkzeug.utils import secure_filename
+from dotenv import load_dotenv
 from functools import wraps
 import os
 from flask_sqlalchemy import SQLAlchemy
 
 app = Flask(__name__)
 
+load_dotenv()
 #setting-up database
-app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///app.db'
+app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get('DATABASE_URL')
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+
+#session key
+app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY')
 
 db_sql = SQLAlchemy(app)
 
@@ -32,12 +37,6 @@ class Post(db_sql.Model):
 #image upload requirements
 app.config['UPLOAD_FOLDER'] =  os.path.join(app.root_path, 'static', 'uploads')
 os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
-
-
-
-#session key
-app.secret_key = 'ganiag'
-
 
 # check-logged-in
 
